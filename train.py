@@ -228,41 +228,6 @@ def train_process(epoch):
             #     num_sample=data['labels'].shape[0]
             loss_history[i].append(loss_val) #*data['labels'].shape[0]
         
-
-        # Step the optimizer
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.001)
-        # for p in model.parameters():
-        #     if p.grad is not None:
-        #         if p.grad.data.isnan().any():
-        #             print(loss_result[0].item())
-        #             print("Warning: NaN detected in gradient of parameter {}".format(p.name))
-        #             p.grad.data.zero_()
-
-        # def compute_max_grad_norm(model):
-        #     total_norm = 0.0
-        #     max_norm = 0.0
-        #     for p in model.parameters():
-        #         if p.grad is not None:
-        #             param_norm = p.grad.data.norm(2).item()
-        #             total_norm += param_norm ** 2
-        #             if param_norm > max_norm:
-        #                 max_norm = param_norm
-        #     total_norm = total_norm ** 0.5
-        #     return total_norm, max_norm
-        # total_norm, max_norm = compute_max_grad_norm(model)
-        # print(f"Total gradient norm: {total_norm:.4f}, Max gradient norm: {max_norm:.4f}")
-        
-        # 如果梯度爆炸，可以打印更多信息
-        # if total_norm > 1e6 or torch.isnan(torch.tensor(total_norm)):
-        #     print("警告：梯度爆炸或出现 NaN！")
-        #     # 可选：打印每个层的梯度范数
-        #     for name, p in model.named_parameters():
-        #         if p.grad is not None:
-        #             print(f"{name}: grad norm = {p.grad.norm(2).item():.4f}")
-        #     # 可以在这里设置断点或直接退出调试
-        #     optimizer.zero_grad()
-        #     continue
-
         optimizer.step()
         optimizer.zero_grad()
         

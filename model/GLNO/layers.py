@@ -6,8 +6,6 @@ from Benchmark.CortexDiffusion.geometry import norm
 from model.GLNO.pointnet import FPSPointNetModule
 import scipy
 import scipy.sparse.linalg as sla
-# ^^^ we NEED to import scipy before torch, or it crashes :(
-# (observed on Ubuntu 20.04 w/ torch 1.6.0 and scipy 1.5.2 installed via conda)
 
 import numpy as np
 import torch
@@ -72,18 +70,14 @@ class Laplace_Transform_Layer(nn.Module):
 
     def gaussian_spectral_filter(self, omega, evals, residue):
         """
-        高斯核谱滤波方法
-
-        参数:
-            omega: 目标频率[c_in,c_out,num_pole]
-            sigma: 高斯核带宽[batch,c_in,num_eig]
-            evals: 特征值[batch,num_eig]
-            evecs: 特征向量[batch,num_vectices,num_eig]
-            residue: 留数[batch,c_in,c_out,num_eig]
-            中间值：特征向量分量[batch,c_in,c_out,num_pole,num_eig]
-            输出：特征向量[batch,c_in,c_out,num_pole,num_eig,num_vectices]
-
-        返回: 近似特征函数，形状为 [n_vertices]
+        Parameter:
+            omega: pole_freq [c_in,c_out,num_pole]
+            sigma: [batch,c_in,num_eig]
+            evals: [batch,num_eig]
+            evecs: [batch,num_vectices,num_eig]
+            residue: [batch,c_in,c_out,num_eig]
+            
+        Return:  [n_vertices]
         """
         # 计算目标特征值 λ = ω²
         omega_ = omega ** 2
@@ -112,14 +106,12 @@ class Laplace_Transform_Layer(nn.Module):
 
     def pole_to_operator(self, pole, evals, evecs, residue, geo_feat, **kwargs):
         """
-        参数:
-            pole: 复数极点，实部x表示衰减，虚部y表示频率[c_in,c_out,num_pole]
-            residue: 留数[batch,c_out,num_eig]
+            pole:  [c_in,c_out,num_pole]
+            residue:  [batch,c_out,num_eig]
         """
         x, y = pole.real, pole.imag
 
-        # 根据虚部y计算近似特征函数
-        approx_func = self.gaussian_spectral_filter(y, evals, residue)#/self.C_inout
+        approx_func = self.gaussian_spectral_filter(y, evals, residue)
 
         # use Taylor expansion to approximate exponential operator
         term1=torch.einsum("biopk,iop->bok",approx_func,x)
@@ -139,14 +131,14 @@ class Laplace_Transform_Layer(nn.Module):
         """
         Pole residue calculation
 
-        参数:
-            evals: LBO特征值，形状为 (batch,num_eigenvectors)
-            sigma: 高斯核，形状为 (in_channels,sigma)
-            x_spec: 输入谱系数，形状为 (batch_size, in_channels, num_eigenvectors*sigma)
-            system_poles: 系统极点，形状为 (in_channels, out_channels, num_poles)
-            system_residues: 系统留数，形状为 (in_channels, out_channels, num_poles)
+        parameter:
+            evals: (batch,num_eigenvectors)
+            sigma: (in_channels,sigma)
+            x_spec: input spectral (batch_size, in_channels, num_eigenvectors*sigma)
+            system_poles: (in_channels, out_channels, num_poles)
+            system_residues: (in_channels, out_channels, num_poles)
 
-        返回:
+        return:
             output_residue1: periodic_signal
             output_residue2: aperiodic_signal
         """
@@ -250,7 +242,7 @@ class Laplace_Transform_Layer(nn.Module):
         if self.aperiod_norm:
             x_aperiod=self.norm_aperiod(x_aperiod.transpose(1, 2))
         else:
-            x_aperiod=x_aperiod.transpose(1, 2)/self.num_sigma/self.C_inout #原来没有这个
+            x_aperiod=x_aperiod.transpose(1, 2)/self.num_sigma/self.C_inout 
 
         x_glno = x_period + x_aperiod
         # x_glno = torch.nan_to_num(x_glno, nan=0.0)
@@ -260,7 +252,7 @@ class Laplace_Transform_Layer(nn.Module):
         if self.glno_norm:
             x_glno=self.norm_glno(x_glno)
             
-        return x_glno  ##分开来并不能变好
+        return x_glno
     
 class MLP(nn.Sequential):
     '''
@@ -453,7 +445,7 @@ class GLNOBlock(nn.Module):
         
         if len(geo_feat.shape)==2:
             geo_feat=geo_feat.unsqueeze(-1)
-        feature_combined = torch.cat((x_in, x_glno, geo_feat), dim=-1) #high还是in好像也no difference， xin比较good #这里加x_high是useless
+        feature_combined = torch.cat((x_in, x_glno, geo_feat), dim=-1) 
         feature_combined = self.norm_feature(feature_combined)         
         
         # Apply the connect method

@@ -91,7 +91,7 @@ def set_up_logger(model, dataset, log_dir):
 
 # == Pytorch things
 def setup_distributed(args): ## TODO check it
-    # 检查是否在分布式环境中运行
+
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         args.rank = int(os.environ["RANK"])
         args.world_size = int(os.environ['WORLD_SIZE'])
@@ -105,12 +105,9 @@ def setup_distributed(args): ## TODO check it
         args.local_rank = 0
         return
 
-    # 设置分布式训练
     if args.distributed:
-        # 设置设备
         torch.cuda.set_device(args.local_rank)
         
-        # 初始化进程组
         dist.init_process_group(
             backend='nccl',
             init_method='env://',

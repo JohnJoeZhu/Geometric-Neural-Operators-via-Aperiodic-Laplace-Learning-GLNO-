@@ -10,93 +10,6 @@ def output_loss_(loss_record, meaning):
         output += "{:.6f} | ".format(loss)
     return output
 
-# class classify_nll_loss(object): #单样本的
-#     def __init__(self, reduction='mean'):
-#         self.reduction = reduction
-
-#     def __call__(self, preds, labels, mask=None, **kwargs):
-#         # loss = torch.nn.functional.cross_entropy(preds, labels, reduction=self.reduction)
-#         if mask is not None:
-#             pass
-#         loss=torch.nn.functional.nll_loss(preds,labels)
-#         pred_labels = torch.max(preds, dim=-1).indices
-#         this_correct = pred_labels.eq(labels).sum().item()
-#         this_num = labels.shape[0]
-#         # print(preds)
-#         # print(labels)
-#         dice=self.dice_grad(preds,labels,preds.shape[-1])
-#         dice_=self.dice(pred_labels,labels,preds.shape[-1])
-#         # print(dice_list)
-#         return [0.3*dice+loss, loss, -this_correct/this_num, dice, -dice_]#+dice_list#+[dice_list[i] for i in range(len(dice_list))]
-#     #这个loss的系数不能太高，要dice的话还是nll补充就好了
-    
-#     # def dice(self, preds, targets, num_classes, smooth=1e-6):
-#     #     """
-#     #     preds: 预测概率，shape (N, C, ...) 或 (N, C) 经过 softmax 后的概率
-#     #     targets: 真实标签，shape (N, ...) 每个值为类别索引 (0,1,...,C-1)
-#     #     num_classes: 类别数
-#     #     smooth: 平滑项防止除零
-#     #     """
-#     #     preds = preds.contiguous().view(preds.size(0), num_classes)  # [N, C, *]
-#     #     targets = targets.contiguous().view(targets.size(0))         # [N, *]
-
-#     #     # 将 targets 转换为 one-hot 编码，shape [N, C, *]
-#     #     targets_one_hot = torch.zeros_like(preds).scatter_(1, targets.unsqueeze(1), 1)
-
-#     #     # 计算每个类别的 Dice 系数
-#     #     intersection = (preds * targets_one_hot).sum(dim=-1)  # [N, C]
-#     #     union = preds.sum(dim=-1) + targets_one_hot.sum(dim=-1)  # [N, C]
-#     #     dice = (2.0 * intersection + smooth) / (union + smooth)  # [N, C]
-#     #     # print(dice.shape)
-#     #     # 返回平均 Dice 损失（1 - Dice 系数）
-#     #     loss = 1 - dice.mean()
-#     #     return loss#, torch.mean(dice,dim=0).cpu().detach().numpy().tolist()
-    
-#     def dice_grad(self, preds, targets, num_classes, smooth=1e-6):
-#         """
-#         可微的 Dice 损失（逐类别平均），对应原 numpy 函数的逻辑。
-
-#         Args:
-#             logits: 模型输出的 logits，形状 (N, C) 或 (N, C, ...)，尚未经过 softmax。
-#             targets: 真实标签，形状 (N, ...)，每个值为类别索引 (0,...,C-1)。
-#             num_classes: 类别总数。
-#             smooth: 平滑项，防止除零，也用于处理空类别的情况。
-
-#         Returns:
-#             loss: 标量损失值，即 1 - 平均类别 Dice。
-#             dice_per_class (可选): 每个类别的 Dice 系数，可用于监控。
-#         """
-#         probs = torch.exp(preds)                 # [N, C, ...]
-        
-#         # 将 targets 转换为 one-hot 编码（与 probs 形状相同）
-#         targets = targets.contiguous().view(-1)          # 展平为 [N*...]
-#         probs = probs.contiguous()
-        
-#         # 生成 one-hot 标签（与 probs 形状相同）
-#         targets_one_hot = torch.zeros_like(probs).scatter_(1, targets.unsqueeze(1), 1)  # [N, C]
-        
-#         # 计算每个类别的总交集和总并集（对所有样本求和）
-#         intersection = (probs * targets_one_hot).sum(dim=0)   # [C]
-#         union = probs.sum(dim=0) + targets_one_hot.sum(dim=0) # [C]
-        
-#         # 计算每个类别的 Dice 系数
-#         dice_per_class = (2.0 * intersection + smooth) / (union + smooth)  # [C]
-        
-#         # 损失：1 - 所有类别 Dice 的平均值
-#         loss = 1 - dice_per_class.mean()
-#         return loss
-    
-#     def dice(self,preds,labels,num_class):
-#         preds = preds.cpu().detach().numpy()
-#         labels = labels.cpu().detach().numpy()
-#         dice = np.ones(num_class)
-#         for i in range(0,num_class):
-#             labels_indices = np.where(labels == i)[0]
-#             preds_indices = np.where(preds == i)[0]
-#             if len(labels_indices)+len(preds_indices)>0:
-#                 dice[i] = 2 * len(np.intersect1d(preds_indices, labels_indices))/(len(preds_indices) + len(labels_indices))
-#         return np.mean(dice)#,dice
-
 class classify_nll_loss(object):
     def __init__(self, reduction='mean'):
         self.reduction = reduction
@@ -110,20 +23,15 @@ class classify_nll_loss(object):
         """
         N = labels.shape[0]
         if N == 0:
-            # 空样本，返回零损失和默认值（避免除零）
             return 0.0, 0, 0, 0.0, 1.0
 
-        # 负对数似然损失（默认 reduction='mean'）
         loss = torch.nn.functional.nll_loss(preds, labels, reduction='mean')
 
-        # 预测类别
         pred_labels = torch.max(preds, dim=-1).indices  # [N]
         correct = (pred_labels == labels).sum().item()
 
-        # 可微 Dice 损失
         dice_grad = self.dice_grad(preds, labels, num_classes)
 
-        # 不可微 Dice（numpy 计算）
         dice_numpy = self.dice(pred_labels, labels, num_classes)
 
         return loss, correct/N, dice_grad, dice_numpy
@@ -194,7 +102,7 @@ class classify_nll_loss(object):
                 dice[i] = 2 * len(np.intersect1d(preds_indices, labels_indices)) / (len(preds_indices) + len(labels_indices))
         return np.mean(dice)
 
-class classify_nll_loss_global(object): #单/多样本的
+class classify_nll_loss_global(object): 
     def __init__(self, reduction='mean'):
         self.reduction = reduction
 
@@ -209,17 +117,6 @@ class classify_nll_loss_global(object): #单/多样本的
         # dice=self.dice(pred_labels,labels,preds.shape[-1])
         return [loss,-this_correct]
     
-    # def dice(self,preds,labels,num_class):
-    #     preds = preds.cpu().detach().numpy()
-    #     labels = labels.cpu().detach().numpy()
-    #     dice = np.ones(num_class)
-    #     for i in range(num_class):
-    #         labels_indices = np.where(labels == i)[0]
-    #         preds_indices = np.where(preds == i)[0]
-    #         if len(labels_indices)+len(preds_indices)>0:
-    #             dice[i] = 2 * len(np.intersect1d(preds_indices, labels_indices))/(len(preds_indices) + len(labels_indices))
-    #     return np.mean(dice)
-
 class LpLoss(object):
     def __init__(self, d=2, p=2, size_average=True, reduction=True): 
         super(LpLoss, self).__init__()

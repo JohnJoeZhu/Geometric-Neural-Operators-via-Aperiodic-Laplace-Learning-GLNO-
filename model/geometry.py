@@ -113,7 +113,6 @@ def compute_dis(verts, central):
     verts_expanded = verts.unsqueeze(-2)  # [n_points, 1, 3]
     central_expanded = central.unsqueeze(-3)  # [1, n_central, 3]
     
-    # 计算欧几里得距离
     distances = torch.sqrt(torch.sum((verts_expanded - central_expanded) ** 2, dim=-1))
     
     return distances

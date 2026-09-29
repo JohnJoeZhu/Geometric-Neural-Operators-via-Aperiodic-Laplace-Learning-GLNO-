@@ -43,13 +43,11 @@ def toNP(x):
     return x.detach().to(torch.device('cpu')).numpy()
 
 def read_sparse_L(h5_group):
-    # 检查必要数据集是否存在
     required_keys = ['L_data', 'L_indices', 'L_indptr', 'L_shape']
     for key in required_keys:
         if key not in h5_group:
             raise KeyError(f"Group missing required dataset: {key}")
     
-    # 读取数据
     data = h5_group['L_data'][:]
     indices = h5_group['L_indices'][:]
     indptr = h5_group['L_indptr'][:]

@@ -1,151 +1,162 @@
-# Geometric Laplace Neural Operator
+# Geometric Laplace Neural Operator (GLNO)
 
-prompts.md for instructions.
-## Data processing
+Research code for learning operators on irregular geometric domains and regular grids. GLNO uses geometry-aware features and Laplace-domain pole-residue layers to model mappings between fields defined on meshes or grids.
 
-utils and geometry.py are used for data processing, though not all are useful.
-```train
-prepare_data.py
-```
+The repository also contains dataset loaders, preprocessing utilities, baseline model implementations, training scripts, and visualization helpers for several scientific machine-learning tasks.
 
-glno_dataset.py is used **Only** to load dataset, match this to the model data preprocessing.
+## Repository Status
 
-add new dataset here and add the name to __init__.py
-## Model
-geometry.py includes geometry function used in model processing
+The primary implementation is [model/GLNO/layers.py](model/GLNO/layers.py). The model registry currently exposes:
 
-model folder contains different model architectures
+- `GLNO`: mesh and irregular-domain operator
+- `GLNO1D`: one-dimensional grid operator
+- `GLNO2D`: two-dimensional grid operator
 
-If new model is need, add **model here** and add to __init__.py in model folder.
+To run the experiment, please prepare data in `data/` directory and setup training config in `config/`d directory.
 
-data preprocessing is written into models, you have to match this to the data loader.
+## Supported Tasks
 
-GLNO/layers.py is the final version
+The dataset registry in [dataset/__init__.py](dataset/__init__.py) currently contains the following task names:
 
-LNO is without sigma version of GLNO
+| Task | Dataset type | Expected storage |
+| --- | --- | --- |
+| `poisson` | Mesh / PDE | `data/poisson/{train,val,test}.h5` |
+| `car` | Mesh CFD | `data/car/{train,val,test}.h5` |
+| `cylinder_flow` | Mesh CFD | `data/cylinder_flow/{train,val,test}.h5` |
+| `rna` | Molecular mesh | `data/rna` |
+| `human` | Human-shape mesh | `data/human` |
+| `shrec11_simplified` | Shape mesh | task-specific mesh data |
+| `pendulum`, `lorenz`, `duffing` | 1D grid data | `data/<task>/<case>/train.pt` |
+| `beam`, `diffusion`, `reacdiffusion` | 2D grid data | `data/<task>/{train,vali,test}.pt` |
+| `turbulent` | 2D turbulent-flow data | `data/turbulent/{train,val,test}.pt` |
 
-FNO unimplemented yet.
+The paths above describe the conventions used by the loaders. Check the corresponding classes in [dataset/glno_dataset__.py](dataset/glno_dataset__.py) and [dataset/grid_dataset.py](dataset/grid_dataset.py) before adding a new dataset.
 
-diffusion_net unimplemented yet.
+## Installation
 
-## Utils
-
-here contains a series of functions for training
-
-If new loss function is need, add **loss function here** .
-
-## training & evaluation
-parameters:
-```bash
---task=rna,poisson # task type
---distributed # use distributed training TODO: not implemented yet
---local_rank # cuda number if not distributed
---evaluate # evaluate the model on test set after training, must contain load_model
---load_model=logs/poisson/best_model.pth # path to load pre-trained model
-```
+Create an environment with a PyTorch build compatible with your CUDA version, then install the Python dependencies used by the repository:
 
 ```bash
+conda create -n glno python=3.10
+conda activate glno
 
-
-conda activate zm_AMG
-cd ICLR_GLNO
-
-## vertices
-
-ALL Models Implementation:
-Fourier
-GINO GEO-FNO LSM
-Transformer
-GNOT Transolver
-Graph
-GKNO Sp2GNO
-
-Laplace
-GLNO
-
-Other
-Unet MLP
-
-DEBUG_MODE=1 #for debug
-
-python train.py --local_rank=1 --task=intra --config=config_segmentation.yaml --dataset_name=data_segmentation.h5
-
-python train.py --task=cortex --local_rank=1 --config=config.yaml
-
-nohup python train.py --task=car --local_rank=3
-python train.py --task=car --local_rank=2 --config=config_geofno.yaml
-python train.py --task=car --local_rank=2 --config=config_gkno.yaml
-python train.py --task=car --local_rank=2 --config=config_gino.yaml
-python train.py --task=car --local_rank=1 --config=config_unet.yaml
-python train.py --task=car --local_rank=3 --config=config_sp2gno.yaml
-
-python visulize.py --task=car --local_rank=2 --load_model=11_06/GLNO_20_22_29,GEO_FNO_19_32_26,GKNO_10_27_39,LSM_11_41_07,MLP_11_28_21,Unet_10_32_26 --model_list=GLNO,Geo-FNO,GKNO,LSM,MLP,Unet
-
-nohup python train.py --task=rna --local_rank=3
-python train.py --task=rna --local_rank=3 --config=config_geofno.yaml
-
-nohup python train.py --task=poisson --local_rank=3
-python train.py --task=poisson --local_rank=2 --config=config_geofno.yaml
-python train.py --task=poisson --local_rank=2 --config=config_gkno.yaml
-python train.py --task=poisson --local_rank=3 --config=config_sp2gno.yaml
-python train.py --task=poisson --local_rank=3 --config=config_gino.yaml
-python visulize.py --task=poisson --local_rank=1 --load_model=GLNO_18_19_19,GEO_FNO_18_55_30,GKNO_21_31_41,LSM_15_55_49,MLP_18_17_18,Unet_18_17_37 --model_list=GLNO,Geo-FNO,GKNO,LSM,MLP,Unet
-python visulize.py --task=poisson --local_rank=1 --load_model=GLNO_18_19_19 --model_list=GLNO
-
-nohup python train.py --task=airfoil --local_rank=2
-
-
-python train.py --task=cylinder_flow --local_rank=1
-
-python train.py --task=human --local_rank=3
-
-python visulize.py --task=human --local_rank=1 --load_model=GLNO_15_00_16,GEO_FNO_21_14_50,GKNO_20_53_21,GNOT_23_37_51,LSM_21_40_38,MLP_21_07_39,Transolver_23_49_45,Unet_21_16_13 --model_list=GLNO,GeoFNO,GKNO,GNOT,LSM,MLP,Transolver,Unet
-
-python visulize.py --task=human --local_rank=1 --load_model=GLNO_15_00_16,GEO_FNO_21_14_50,GNOT_23_37_51,LSM_21_40_38,Transolver_23_49_45,Unet_21_16_13 --model_list=GLNO,GeoFNO,GNOT,LSM,Transolver,Unet
-
-
-python visulize.py --task=rna --local_rank=0 --load_model=GLNO_17_27_39,GEO_FNO_19_59_55,GNOT_16_48_56,LSM_16_40_19,GKNO_08_00_00,Transolver_23_54_51,Unet_16_21_19 --model_list=GLNO,GeoFNO,GNOT,LSM,GKNO,Transolver,Unet
-## grid
-
-python train.py --task=turbulent --local_rank=1 --config=config_glno.yaml --seed=42
-
-python train.py --task=pendulum/c02 --local_rank=1 --config=config_cno.yaml # fno cno wno lno glno 
-
-python train.py --task=duffing/c0 --local_rank=1 --config=config_fno.yaml
-python visulize.py --task=lorenz/rho10 --local_rank=1 --load_model=GLNO1D_21_43_09,CNO1D_21_35_48,FNO1D_21_32_21,WNO1D_21_33_12,LNO1D_21_45_29 --model_list=GLNO,CNO,FNO,WNO,LNO
-python visulize.py --task=lorenz/rho10 --local_rank=1 --load_model=GLNO1D_12_00_00,LNO1D_21_45_29,WNO1D_21_33_12,FNO1D_21_32_21,CNO1D_21_35_48 --model_list=GLNO,LNO,WNO,FNO,CNO
-python visulize.py --task=lorenz/rho05 --local_rank=1 --load_model=GLNO1D_21_23_21,CNO1D_19_12_14,FNO1D_21_10_10,WNO1D_21_16_37,LNO1D_21_14_05 --model_list=GLNO,CNO,FNO,WNO,LNO
-python visulize.py --task=lorenz/rho05 --local_rank=1 --load_model=GLNO1D_21_23_21 --model_list=GLNO
-python visulize.py --task=lorenz/rho05 --local_rank=1 --load_model=CNO1D_19_12_14 --model_list=CNO
-python visulize.py --task=lorenz/rho10 --local_rank=1 --load_model=01_23/GLNO1D_21_50_12 --model_list=GLNO
-python train.py --task=lorenz/rho10 --local_rank=1 --config=config_glno.yaml
-
-python train.py --task=duffing/c05 --local_rank=1 --config=config_glno.yaml
-python visulize.py --task=duffing/c05 --local_rank=1 --load_model=GLNO1D_16_35_47,LNO1D_20_50_26,WNO1D_20_48_16,FNO1D_20_47_16,CNO1D_20_59_17 --model_list=GLNO,LNO,WNO,FNO,CNO
-python visulize.py --task=duffing/c05 --local_rank=1 --load_model=01_24/GLNO1D_21_57_10 --model_list=GLNO
-
-python visulize.py --task=diffusion --local_rank=1 --load_model=GLNO2D_23_10_30 --model_list=GLNO
-python visulize.py --task=diffusion --local_rank=2 --load_model=GLNO2D_23_10_30,CNO2D_13_18_48,FNO2D_18_03_29,LNO2D_18_17_36,WNO2D_14_39_04 --model_list=GLNO,CNO,FNO,LNO,WNO
-
-python visulize.py --task=beam --local_rank=2 --load_model=GLNO2D_17_52_44,CNO2D_12_41_37,FNO2D_17_33_06,LNO2D_17_57_56,WNO2D_14_03_03 --model_list=GLNO,CNO,FNO,LNO,WNO
-
-python train.py --task=reacdiffusion --local_rank=1 --config=config_glno.yaml
-python visulize.py --task=reacdiffusion --local_rank=2 --load_model=GLNO2D_17_35_50,FNO2D_18_23_20,LNO2D_17_07_13,WNO2D_14_32_38 --model_list=GLNO,FNO,LNO,WNO
-
-
-python train.py --task=beam --local_rank=2 
-python train.py --task=diffusion --local_rank=1 --config=config_glno.yaml
-
-python train.py --task=shrec11_simplified --local_rank=1 --config=config_geofno.yaml
-
+# Install a CUDA-compatible PyTorch build from pytorch.org first.
+pip install numpy scipy pyyaml tqdm h5py einops potpourri3d torch-geometric
 ```
 
-results are saved in logs/task/date/model_time/train.log
+The correct installation command for `torch-geometric` depends on the installed PyTorch and CUDA versions. Follow the official PyTorch Geometric installation instructions if the simple command above is not sufficient.
 
-## visualization
-private
+Run commands from the repository root:
 
-haven't rewrite yet.
+```bash
+cd path/to/GLNO
+```
 
+## Configuration
 
-python visulize.py --task=turbulent --local_rank=2 --load_model=GLNO2D_14_11_58,FNO2D_15_43_36,LNO2D_15_49_12,WNO2D_21_50_04 --model_list=GLNO,FNO,LNO,WNO
+`train.py` loads a task-specific YAML file using this pattern:
+
+```text
+config/<task-prefix>/<config-name>
+```
+
+For example, the command below expects:
+
+```text
+config/poisson/config_glno.yaml
+```
+
+The configuration must define at least the `system`, `dataset`, `model`, and `training` sections. Use a local `config_glno.yaml` template if one is available in your checkout, or use the configuration files from the experiment that produced your dataset and checkpoint.
+
+Important model settings include `C_width`, `k_eig`, `glno_sigma`, `glno_poles`, normalization options, and the input/output channel definitions. The dataset section controls batch sizes, validation splitting, and padding for variable-size meshes.
+
+## Training
+
+The main entry point is [train.py](train.py). A minimal single-GPU command is:
+
+```bash
+python train.py --task=poisson --local_rank=0 --config=config_glno.yaml
+```
+
+For a grid task:
+
+```bash
+python train.py --task=lorenz/rho10 --local_rank=0 --config=config_glno.yaml
+```
+
+Available command-line options include:
+
+| Option | Description |
+| --- | --- |
+| `--task` | Required task name, such as `poisson`, `car`, or `lorenz/rho10`. |
+| `--config` | YAML filename selected under `config/<task-prefix>/`; default: `config_glno.yaml`. |
+| `--local_rank` | CUDA device index for single-process execution. |
+| `--distributed` | Enables distributed initialization when launched with `torchrun`. |
+| `--dataset_name` | Processed HDF5 filename for `cortex`, `intra`, and `poissonunstruc`. |
+| `--load_model` | Loads a model state dictionary before training or evaluation. |
+| `--evaluate` | Skips training and evaluates the loaded model on the test set. |
+| `--seed` | Random seed; default: `42`. |
+| `--channels` | Overrides the configured model width. |
+| `--modes` | Overrides the configured spectral/Fourier mode count. |
+| `--sigma` | Overrides the configured sigma count. |
+| `--number_worker` | DataLoader worker count; default: `4`. |
+
+## Evaluation
+
+To evaluate a saved model without running another training phase, provide both `--evaluate` and `--load_model`:
+
+```bash
+python train.py \
+  --task=poisson \
+  --local_rank=0 \
+  --evaluate \
+  --load_model=logs/poisson/09_28/GLNO_12_00_00/best_model.pth
+```
+
+Each training run creates a directory under:
+
+```text
+logs/<task>/<MM_DD>/<model>_<HH_MM_SS>/
+```
+
+Depending on the configuration, the directory may contain:
+
+- `config.yaml`: resolved training configuration and command arguments
+- `train.log`: console and training log output
+- `best_model.pth`: best validation checkpoint saved by the training loop
+- `checkpoint_<epoch>_<loss>.pth`: optional full training checkpoints
+- `test_loss_distribution.png`: test-loss distribution when enabled
+
+## Data Preparation
+
+The repository includes preparation utilities for several data formats:
+
+- [dataset/prepare_data.py](dataset/prepare_data.py): mesh/PDE preprocessing helpers
+- [dataset/prepare_grid_dataset.py](dataset/prepare_grid_dataset.py): grid dataset conversion
+- [dataset/prepare_cortex.py](dataset/prepare_cortex.py): cortex preprocessing
+- [process_data.py](process_data.py): Laplacian and geometric operator preprocessing
+
+Mesh HDF5 files are expected to contain sample groups and metadata required by the mesh loaders. Depending on the task, these fields include `input`, `output`, `vertices`, `mass`, `eval`, `evec`, and geometric features such as `distance`. Grid `.pt` files are expected to contain tensors named `x`, `y`, and grid coordinates such as `grid_x` and `grid_y`.
+
+For variable-size mesh batches, the training pipeline uses task-specific collate functions from [utils/Dataloader_Training.py](utils/Dataloader_Training.py). Keep the loader, collate function, model input contract, and YAML configuration consistent when adding a new dataset.
+
+## Adding a Dataset or Model
+
+1. Implement the dataset class in `dataset/`.
+2. Register it in `DATASET_DICT` in [dataset/__init__.py](dataset/__init__.py).
+3. Add any task-specific collate function to [utils/Dataloader_Training.py](utils/Dataloader_Training.py).
+4. Add the matching YAML configuration under `config/<task-prefix>/`.
+5. Implement the model in `model/` and register it in `MODEL_DICT` in [model/__init__.py](model/__init__.py).
+6. Add or update a task visualizer in [utils/visualizor](utils/visualizor) when rendered predictions are needed.
+7. Run a small training/evaluation pass before launching a full experiment.
+
+## Project Layout
+
+```text
+GLNO/
+├── dataset/       Dataset classes and preprocessing scripts
+├── model/         GLNO, grid GLNO, and baseline architectures
+├── utils/         Losses, dataloaders, geometry, logging, and visualization
+├── train.py       Main configurable training and evaluation entry point
+└── README.md      Project documentation
+```

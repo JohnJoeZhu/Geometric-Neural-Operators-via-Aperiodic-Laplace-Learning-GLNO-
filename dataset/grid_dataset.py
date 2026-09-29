@@ -71,15 +71,13 @@ class Grid2DDataset(Dataset):
         return {'inputs':self.input_data[idx], 'labels':self.output_data[idx], 'grid_x':self.grid_x, 'grid_y':self.grid_y}
 
 class WellDataset(Dataset):
-    """
-    用于加载 The Well 数据集的 PyTorch Dataset 类
-    
+    """   
     Args:
-        mode: 'train', 'val', 或 'test'
-        dataset_path: 数据集根目录，如 '/data/well/turbulent_radiative_layer_2D'
-        cache_dir: 缓存文件保存目录，默认为 dataset_path
-        fields: 要加载的物理场列表，可选 ['density', 'pressure', 'velocity']
-        time_steps: 要使用的时间步，None表示全部
+        mode: 'train', 'val', or 'test'
+        dataset_path:  '/data/well/turbulent_radiative_layer_2D'
+        cache_dir:  dataset_path
+        fields:  ['density', 'pressure', 'velocity']
+        time_steps: None for all
     """
     def __init__(self, mode='train', dataset_path=None, 
                  fields=['density', 'pressure', 'velocity'], time_steps=None, **kwargs):
@@ -90,10 +88,8 @@ class WellDataset(Dataset):
         
         cache_dir=dataset_path
         
-        # 缓存文件名
         cache_file = cache_dir + f"/{mode}.pt"
         
-        # 尝试加载缓存
         if os.path.exists(cache_file):
             print(f"  --> loading dataset from cache {cache_file}")
             data = torch.load(cache_file)
